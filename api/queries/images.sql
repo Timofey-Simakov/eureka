@@ -5,3 +5,6 @@ RETURNING id::text;
 
 -- name: ImageByID :one
 SELECT id::text, page_id::text, name, mime, size_bytes, content FROM images WHERE id=$1::uuid;
+
+-- name: ImagesByPage :many
+SELECT id::text, name, mime, size_bytes, created_at FROM images WHERE page_id=$1::uuid ORDER BY created_at DESC;

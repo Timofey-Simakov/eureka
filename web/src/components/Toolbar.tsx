@@ -1,9 +1,15 @@
 import Button from "./ui/Button";
+import ImageManager from "./ImageManager";
 import { theme } from "../styles/theme";
 
-type Props = { value: string; onChange: (v: string) => void; target?: HTMLTextAreaElement | null };
+type Props = {
+  value: string;
+  onChange: (v: string) => void;
+  target?: HTMLTextAreaElement | null;
+  pageId?: string;
+};
 
-export default function Toolbar({ value, onChange, target }: Props) {
+export default function Toolbar({ value, onChange, target, pageId }: Props) {
   function wrap(prefix: string, suffix = prefix) {
     if (!target) return;
     const { selectionStart: s, selectionEnd: e } = target;
@@ -56,6 +62,14 @@ export default function Toolbar({ value, onChange, target }: Props) {
         target.selectionEnd = s + text.length;
       }
     }, 0);
+  }
+
+  function handleImageInsert(imageId: string, imageName: string) {
+    // Вставляем Markdown-синтаксис изображения
+    const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8081";
+    const imageUrl = `${baseURL}/api/images/${imageId}`;
+    const markdown = `![${imageName}](${imageUrl})`;
+    insertAtCursor(markdown);
   }
 
   const containerStyle: React.CSSProperties = {
@@ -120,6 +134,7 @@ export default function Toolbar({ value, onChange, target }: Props) {
         <Button size="sm" variant="ghost" onClick={() => wrap("[", "](url)")} title="Ссылка (Ctrl+K)">
           🔗
         </Button>
+        {pageId && <ImageManager pageId={pageId} onInsert={handleImageInsert} />}
       </div>
 
       <div style={dividerStyle} />

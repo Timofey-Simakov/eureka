@@ -279,7 +279,7 @@ export default function Editor() {
           />
         </div>
 
-        <Toolbar value={body} onChange={setBody} target={taRef.current} />
+        <Toolbar value={body} onChange={setBody} target={taRef.current} pageId={id} />
 
         <div style={editorAreaStyle}>
           <textarea

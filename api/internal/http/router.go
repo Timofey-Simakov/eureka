@@ -29,6 +29,9 @@ func Router(svc *service.Service, jwtSecret string) http.Handler {
 
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
 
+	// public image access (no auth required for <img> tags)
+	r.Get("/api/images/{id}", svc.GetImage)
+
 	// auth
 	r.Post("/api/auth/register", func(w http.ResponseWriter, r *http.Request) {
 		var req struct{ Email, Password string }
@@ -78,8 +81,8 @@ func Router(svc *service.Service, jwtSecret string) http.Handler {
 	ap.Delete("/api/links/{id}", svc.DelLink)
 
 	// images
+	ap.Get("/api/pages/{id}/images", svc.ListImages)
 	ap.Post("/api/pages/{id}/images", svc.UploadImage)
-	ap.Get("/api/images/{id}", svc.GetImage)
 
 	// graph
 	ap.Get("/api/graph", svc.UserGraph)

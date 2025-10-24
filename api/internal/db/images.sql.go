@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -63,4 +64,45 @@ func (q *Queries) ImageCreate(ctx context.Context, arg ImageCreateParams) (strin
 	var id string
 	err := row.Scan(&id)
 	return id, err
+}
+
+const imagesByPage = `-- name: ImagesByPage :many
+SELECT id::text, name, mime, size_bytes, created_at FROM images WHERE page_id=$1::uuid ORDER BY created_at DESC
+`
+
+type ImagesByPageRow struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Mime      string    `json:"mime"`
+	SizeBytes int32     `json:"size_bytes"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (q *Queries) ImagesByPage(ctx context.Context, dollar_1 uuid.UUID) ([]ImagesByPageRow, error) {
+	rows, err := q.db.QueryContext(ctx, imagesByPage, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ImagesByPageRow
+	for rows.Next() {
+		var i ImagesByPageRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Mime,
+			&i.SizeBytes,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

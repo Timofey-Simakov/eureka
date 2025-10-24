@@ -443,6 +443,21 @@ func (s *Service) GetImage(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(img.Content)
 }
 
+func (s *Service) ListImages(w http.ResponseWriter, r *http.Request) {
+	pageIDStr := chi.URLParam(r, "id")
+	pageID, err := uuid.Parse(pageIDStr)
+	if err != nil {
+		http.Error(w, "bad id", 400)
+		return
+	}
+	images, err := s.Q.ImagesByPage(r.Context(), pageID)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	writeJSON(w, images)
+}
+
 // --- GRAPH & ADMIN ---
 
 func (s *Service) UserGraph(w http.ResponseWriter, r *http.Request) {

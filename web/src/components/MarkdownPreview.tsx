@@ -26,6 +26,23 @@ export default function MarkdownPreview({ content, pages }: MarkdownPreviewProps
 
     containerRef.current.innerHTML = cleanHtml;
 
+    // Style images
+    const images = containerRef.current.querySelectorAll<HTMLImageElement>("img");
+    images.forEach((img) => {
+      img.style.maxWidth = "100%";
+      img.style.height = "auto";
+      img.style.borderRadius = "8px";
+      img.style.marginTop = "16px";
+      img.style.marginBottom = "16px";
+      img.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+      img.style.cursor = "pointer";
+
+      // Add click to open in new tab
+      img.addEventListener("click", () => {
+        window.open(img.src, "_blank");
+      });
+    });
+
     // Add click handlers for wiki links (internal pages only)
     const wikiLinks = containerRef.current.querySelectorAll<HTMLAnchorElement>(".wiki-link-exists");
     wikiLinks.forEach((link) => {
