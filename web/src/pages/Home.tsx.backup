@@ -1,0 +1,189 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import api, { setToken } from "../lib/api";
+import { Link, useNavigate } from "react-router-dom";
+import * as d3 from "d3";
+
+type PageRow = { p_id?: string; id?: string; name: string; owner_email?: string; updated_at: string; owner_id?: string };
+type GraphRow = { node_id: string; node_name: string; edge_from: string; edge_to: string; tag?: { String: string; Valid: boolean } };
+
+const styles = {
+  container: { borderRadius: 16, padding: 16, background: "#fafafa" },
+  sectionCard: { padding: 12, borderRadius: 16, background: "#fff", boxShadow: "0 0 6px rgba(0,0,0,0.06)" },
+  chipLink: {
+    display: "inline-block", border: "1px solid #e5e7eb", borderRadius: 16, padding: "4px 10px",
+    textDecoration: "none", color: "#111827", background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", outline: "none",
+  } as React.CSSProperties,
+  btn: {
+    display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #e5e7eb", borderRadius: 16, padding: "8px 14px",
+    background: "#ffffff", color: "#111827", textDecoration: "none", cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.06)", outline: "none",
+  } as React.CSSProperties,
+  btnDanger: {
+    border: "1px solid #fecaca", color: "#991b1b", background: "#fff", padding: "4px 10px", borderRadius: 16,
+    cursor: "pointer", marginLeft: 8,
+  } as React.CSSProperties,
+};
+
+export default function Home() {
+  const nav = useNavigate();
+  const [pages, setPages] = useState<PageRow[]>([]);
+  const [graph, setGraph] = useState<GraphRow[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = localStorage.getItem("token");
+    setToken(t);
+    refresh();
+  }, []);
+
+  const refresh = async () => {
+    setErr(null);
+    try {
+      const [p, g] = await Promise.all([
+        api.get("/api/pages"),
+        api.get("/api/graph"),
+      ]);
+      setPages(p.data);
+      setGraph(g.data);
+    } catch (e: any) {
+      if (e?.response?.status === 401) {
+        nav("/login");
+        return;
+      }
+      setErr("Ошибка загрузки");
+      console.error(e);
+    }
+  };
+
+  const createPage = async () => {
+    const name = prompt("Название страницы:", "Новая страница");
+    if (!name) return;
+    try {
+      await api.post("/api/pages", { name, body: "" });
+      refresh();
+    } catch {
+      alert("Ошибка создания");
+    }
+  };
+
+  const deletePage = async (id: string) => {
+    if (!confirm("Удалить страницу?")) return;
+    try {
+      await api.delete(`/api/pages/${id}`);
+      refresh();
+    } catch {
+      alert("Ошибка удаления");
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <h2 style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}>
+        Домашняя
+        <button style={styles.btn} onClick={createPage} onFocus={(e)=>e.currentTarget.blur()}>
+          <span aria-hidden>＋</span>
+          Создать страницу
+        </button>
+      </h2>
+
+      <section style={{ marginBottom: 20 }}>
+        <h3>Мои страницы</h3>
+        {err && <div style={{ color: "#b91c1c", marginBottom: 8 }}>{err}</div>}
+        <ul style={{ paddingLeft: 18, marginTop: 8 }}>
+          {pages.map((p) => {
+            const id = p.p_id || p.id!;
+            return (
+              <li key={id} style={{ marginBottom: 8 }}>
+                <Link to={`/editor/${id}`} style={styles.chipLink} onFocus={(e) => e.currentTarget.blur()}>
+                  {p.name}
+                </Link>
+                <button
+                  style={styles.btnDanger}
+                  onClick={() => deletePage(id)}
+                  onFocus={(e)=>e.currentTarget.blur()}
+                  title="Удалить страницу"
+                >
+                  Удалить
+                </button>
+                {p.owner_email && <> · {p.owner_email}</>}
+              </li>
+            );
+          })}
+          {pages.length === 0 && !err && <li>пусто</li>}
+        </ul>
+      </section>
+
+      <section>
+        <h3>Граф связей</h3>
+        <GraphView rows={graph} />
+      </section>
+    </div>
+  );
+}
+
+function GraphView({ rows }: { rows: GraphRow[] }) {
+  const ref = useRef<SVGSVGElement | null>(null);
+
+  const { nodes, links } = useMemo(() => {
+    type NodeDatum = { id: string; name: string };
+    const nodeMap = new Map<string, NodeDatum>();
+    const edges: { source: string; target: string; tag?: string }[] = [];
+
+    for (const r of rows) {
+      if (!nodeMap.has(r.node_id)) nodeMap.set(r.node_id, { id: r.node_id, name: r.node_name });
+      if (r.edge_from && r.edge_to) {
+        edges.push({ source: r.edge_from, target: r.edge_to, tag: r.tag?.Valid ? r.tag.String : undefined });
+      }
+    }
+
+    const seen = new Set<string>();
+    const uniq = edges.filter((e) => { const k = `${e.source}->${e.target}:${e.tag || ""}`; if (seen.has(k)) return false; seen.add(k); return true; });
+    const have = new Set(nodeMap.keys());
+    const filtered = uniq.filter((e) => have.has(e.source) && have.has(e.target));
+
+    return { nodes: Array.from(nodeMap.values()), links: filtered };
+  }, [rows]);
+
+  useEffect(() => {
+    const svg = d3.select(ref.current);
+    const width = 960, height = 420;
+    svg.attr("viewBox", `0 0 ${width} ${height}`).selectAll("*").remove();
+
+    if (nodes.length === 0) {
+      svg.append("text").attr("x", 16).attr("y", 24).text("граф пуст");
+      return;
+    }
+
+    const sim = d3.forceSimulation(nodes as any)
+      .force("link", d3.forceLink(links as any).id((d: any) => d.id).distance(120))
+      .force("charge", d3.forceManyBody().strength(-220))
+      .force("center", d3.forceCenter(width / 2, height / 2));
+
+    const link = svg.append("g").selectAll("line")
+      .data(links).enter().append("line")
+      .attr("stroke", "#e5e7eb").attr("stroke-width", 2).attr("stroke-linecap", "round");
+
+    const node = svg.append("g").selectAll<SVGGElement, any>("g")
+      .data(nodes).enter().append("g")
+      .call(d3.drag<SVGGElement, any>()
+        .on("start", (event, d) => { if (!event.active) sim.alphaTarget(0.3).restart(); (d as any).fx = (d as any).x; (d as any).fy = (d as any).y; })
+        .on("drag", (event, d) => { (d as any).fx = event.x; (d as any).fy = event.y; })
+        .on("end", (event, d) => { if (!event.active) sim.alphaTarget(0); (d as any).fx = null; (d as any).fy = null; })
+      );
+
+    node.append("circle").attr("r", 18).attr("fill", "#ffffff").attr("stroke", "#9ca3af").attr("stroke-width", 1.5);
+    node.append("text").text((d: any) => d.name).attr("font-size", 12).attr("text-anchor", "middle").attr("dy", 4).attr("fill", "#111827");
+
+    sim.on("tick", () => {
+      link.attr("x1", (d: any) => d.source.x).attr("y1", (d: any) => d.source.y).attr("x2", (d: any) => d.target.x).attr("y2", (d: any) => d.target.y);
+      (svg.selectAll("g") as any).attr("transform", (d: any) => `translate(${d.x},${d.y})`);
+    });
+
+    return () => { sim.stop(); };
+  }, [nodes, links]);
+
+  return (
+    <div style={styles.sectionCard}>
+      <svg ref={ref} width="100%" height="420" />
+    </div>
+  );
+}

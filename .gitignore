@@ -1,0 +1,32 @@
+# Environment variables with sensitive data
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker volumes and data
+uploads/
+
+# Build artifacts
+web/dist/
+web/node_modules/
+api/bin/
+
+# Deploy directory (contains copied .env)
+deploy/.env
+
+# Temporary files
+*.tmp
+*.temp

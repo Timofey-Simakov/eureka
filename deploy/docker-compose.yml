@@ -1,0 +1,52 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${PGDATABASE}
+    volumes: [ "db_data:/var/lib/postgresql/data" ]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U ${PGUSER} -d ${PGDATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    image: migrate/migrate:4
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes: [ "../api/migrations:/migrations:ro" ]
+    command: [
+      "-path","/migrations",
+      "-database","postgres://${PGUSER}:${PGPASSWORD}@db:5432/${PGDATABASE}?sslmode=disable",
+      "up"
+    ]
+    restart: "on-failure:2"
+
+  api:
+    build:
+      context: ..
+      dockerfile: api/Dockerfile
+    environment:
+      API_ADDR: ":8080"
+      DATABASE_URL: "postgres://${PGUSER}:${PGPASSWORD}@db:5432/${PGDATABASE}?sslmode=disable"
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    ports: [ "8081:8080" ]
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+    depends_on:
+      api:
+        condition: service_started
+    ports: [ "8082:80" ]
+
+volumes:
+  db_data:
