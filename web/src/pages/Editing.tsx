@@ -15,7 +15,6 @@ export default function Editing() {
   const nav = useNavigate();
 
   useEffect(() => {
-    // Проверяем авторизацию
     const token = localStorage.getItem("token");
     if (!token) {
       nav("/login");

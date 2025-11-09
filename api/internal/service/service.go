@@ -30,8 +30,6 @@ func check(hash, pw string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(pw)) == nil
 }
 
-// --- AUTH ---
-
 func (s *Service) Register(ctx context.Context, email, password string) (string, error) {
 	h, err := hash(password)
 	if err != nil {
@@ -52,8 +50,6 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, st
 	return u.ID.String(), string(u.Role), nil
 }
 
-// --- JSON helpers ---
-
 func bind(w http.ResponseWriter, r *http.Request, v any) bool {
 	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
 		http.Error(w, "bad json", 400)
@@ -68,8 +64,6 @@ func writeJSONCode(w http.ResponseWriter, code int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-// --- PAGES ---
-
 func (s *Service) ListPages(w http.ResponseWriter, r *http.Request) {
 	uid := r.Context().Value(auth.CtxUserID).(string)
 	role, _ := r.Context().Value(auth.CtxRole).(string)
@@ -79,7 +73,7 @@ func (s *Service) ListPages(w http.ResponseWriter, r *http.Request) {
 		if q := r.URL.Query().Get("owner"); q != "" {
 			owner = q
 		} else {
-			owner = "" // показать все
+			owner = ""
 		}
 	}
 
@@ -121,7 +115,7 @@ func (s *Service) CreatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, err := s.Q.PageCreate(r.Context(), db.PageCreateParams{
-		Column1: userID, // user_id
+		Column1: userID,
 		Name:    req.Name,
 		Body:    req.Body,
 	})
@@ -147,10 +141,8 @@ func (s *Service) GetPage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, row)
 }
 
-// parseWikiLinks extracts all [[Page Name]] style links from text
 func parseWikiLinks(text string) []string {
 	var links []string
-	// Simple regex to find [[...]]
 	start := 0
 	for {
 		idx1 := strings.Index(text[start:], "[[")
@@ -173,25 +165,19 @@ func parseWikiLinks(text string) []string {
 	return links
 }
 
-// syncPageLinks updates page links based on [[wiki]] references in body
 func (s *Service) syncPageLinks(ctx context.Context, pageID uuid.UUID, userID uuid.UUID, body string) error {
-	// Parse wiki links
 	wikiLinks := parseWikiLinks(body)
 
-	// Delete existing links
 	if err := s.Q.LinksDeleteBySource(ctx, pageID); err != nil {
 		return err
 	}
 
-	// Create new links
 	for _, linkName := range wikiLinks {
-		// Find page by name
 		destID, err := s.Q.PageByNameAndUser(ctx, db.PageByNameAndUserParams{
 			Column1: userID,
 			Name:    linkName,
 		})
 		if err != nil {
-			// Page doesn't exist, skip
 			continue
 		}
 
@@ -200,7 +186,6 @@ func (s *Service) syncPageLinks(ctx context.Context, pageID uuid.UUID, userID uu
 			continue
 		}
 
-		// Create link
 		_, _ = s.Q.LinkCreate(ctx, db.LinkCreateParams{
 			Column1: pageID,
 			Column2: destUUID,
@@ -245,7 +230,6 @@ func (s *Service) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sync wiki links
 	userUUID, _ := uuid.Parse(uid)
 	_ = s.syncPageLinks(r.Context(), pid, userUUID, req.Body)
 
@@ -304,8 +288,6 @@ func (s *Service) ChangeOwner(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, map[string]string{"ok": "1"})
 }
-
-// --- LINKS ---
 
 func (s *Service) ListLinks(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -371,9 +353,8 @@ func (s *Service) DelLink(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]string{"ok": "1"})
 }
 
-// --- IMAGES ---
+const maxImage = 5 << 20
 
-const maxImage = 5 << 20 // 5 MB
 var allowed = map[string]bool{
 	"image/png":  true,
 	"image/jpeg": true,
@@ -413,7 +394,7 @@ func (s *Service) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, err := s.Q.ImageCreate(r.Context(), db.ImageCreateParams{
-		Column1:   pageID, // page_id
+		Column1:   pageID,
 		Name:      hdr.Filename,
 		Mime:      mime,
 		SizeBytes: int32(buf.Len()),
@@ -457,8 +438,6 @@ func (s *Service) ListImages(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, images)
 }
-
-// --- GRAPH & ADMIN ---
 
 func (s *Service) UserGraph(w http.ResponseWriter, r *http.Request) {
 	uidStr := r.Context().Value(auth.CtxUserID).(string)

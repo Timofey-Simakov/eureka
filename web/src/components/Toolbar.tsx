@@ -17,12 +17,10 @@ export default function Toolbar({ value, onChange, target, pageId }: Props) {
     const sel = value.slice(s, e);
     const after = value.slice(e);
 
-    // Check if selection is already wrapped with these markers
     const beforePrefix = value.slice(s - prefix.length, s);
     const afterSuffix = value.slice(e, e + suffix.length);
 
     if (beforePrefix === prefix && afterSuffix === suffix) {
-      // Remove the wrapping
       const newBefore = value.slice(0, s - prefix.length);
       const newAfter = value.slice(e + suffix.length);
       onChange(newBefore + sel + newAfter);
@@ -34,7 +32,6 @@ export default function Toolbar({ value, onChange, target, pageId }: Props) {
         }
       }, 0);
     } else {
-      // Add the wrapping
       onChange(before + prefix + sel + suffix + after);
       setTimeout(() => {
         if (target) {
@@ -65,7 +62,6 @@ export default function Toolbar({ value, onChange, target, pageId }: Props) {
   }
 
   function handleImageInsert(imageId: string, imageName: string) {
-    // Вставляем Markdown-синтаксис изображения
     const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8081";
     const imageUrl = `${baseURL}/api/images/${imageId}`;
     const markdown = `![${imageName}](${imageUrl})`;

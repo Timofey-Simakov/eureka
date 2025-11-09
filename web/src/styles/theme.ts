@@ -1,4 +1,3 @@
-// Design tokens and theme system
 export const theme = {
   colors: {
     primary: {

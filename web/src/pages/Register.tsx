@@ -37,7 +37,6 @@ export default function Register() {
 
     try {
       await register(email, password);
-      // Автоматически логиним после регистрации
       await login(email, password);
       toast.success("Регистрация успешна! Добро пожаловать!");
       nav("/");

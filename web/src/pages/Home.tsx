@@ -54,7 +54,6 @@ export default function Home() {
         api.get("/api/pages"),
         api.get("/api/graph"),
       ]);
-      // Ensure data is an array
       setPages(Array.isArray(p.data) ? p.data : []);
       setGraph(Array.isArray(g.data) ? g.data : []);
     } catch (e: any) {
@@ -250,7 +249,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
     const have = new Set(nodeMap.keys());
     const filtered = uniq.filter((e) => have.has(e.source) && have.has(e.target));
 
-    // Count outgoing links for each node
     filtered.forEach((edge) => {
       const sourceNode = nodeMap.get(edge.source);
       if (sourceNode) {
@@ -271,10 +269,8 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
       return;
     }
 
-    // Add arrow marker definitions for different node sizes
     const defs = svg.append("defs");
 
-    // Small nodes (radius 20-25)
     defs.append("marker")
       .attr("id", "arrowhead-small")
       .attr("viewBox", "0 -5 10 10")
@@ -287,7 +283,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", theme.colors.neutral[300]);
 
-    // Medium nodes (radius 25-35)
     defs.append("marker")
       .attr("id", "arrowhead-medium")
       .attr("viewBox", "0 -5 10 10")
@@ -300,7 +295,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", theme.colors.neutral[300]);
 
-    // Large nodes (radius 35+)
     defs.append("marker")
       .attr("id", "arrowhead-large")
       .attr("viewBox", "0 -5 10 10")
@@ -339,7 +333,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
         .on("end", (event, d) => { if (!event.active) sim.alphaTarget(0); (d as any).fx = null; (d as any).fy = null; })
       );
 
-    // Calculate radius based on outgoing links: base 20, +5 per link, max 40
     node.append("circle")
       .attr("r", (d: any) => Math.min(20 + d.outgoingLinks * 5, 40))
       .attr("fill", "#ffffff")

@@ -23,7 +23,6 @@ export default function Editor() {
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const toast = useToast();
 
-  // Undo/redo history
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const isUndoRedoRef = useRef(false);
@@ -31,7 +30,6 @@ export default function Editor() {
   const debouncedBody = useDebounce(body, 2000);
   const debouncedName = useDebounce(name, 2000);
 
-  // Load page data
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -51,30 +49,25 @@ export default function Editor() {
       });
   }, [id]);
 
-  // Auto-save
   useEffect(() => {
     if (!hasChanges || loading) return;
     save(true);
   }, [debouncedBody, debouncedName]);
 
-  // Track changes
   useEffect(() => {
     if (loading) return;
     setHasChanges(true);
   }, [name, body]);
 
-  // Track body changes for undo/redo
   useEffect(() => {
     if (loading || isUndoRedoRef.current) {
       isUndoRedoRef.current = false;
       return;
     }
 
-    // Add to history when body changes
     setHistory(prev => {
       const newHistory = prev.slice(0, historyIndex + 1);
       newHistory.push(body);
-      // Keep max 50 history entries
       if (newHistory.length > 50) {
         return newHistory.slice(-50);
       }
@@ -120,37 +113,30 @@ export default function Editor() {
     [id, name, body]
   );
 
-  // Hotkeys
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+Z - Undo
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
         return;
       }
-      // Ctrl+Y or Ctrl+Shift+Z - Redo
       if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
         e.preventDefault();
         redo();
         return;
       }
-      // Ctrl+S / Cmd+S - Save
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         save();
       }
-      // Ctrl+B - Bold
       if ((e.ctrlKey || e.metaKey) && e.key === "b") {
         e.preventDefault();
         wrapText("**", "**");
       }
-      // Ctrl+I - Italic
       if ((e.ctrlKey || e.metaKey) && e.key === "i") {
         e.preventDefault();
         wrapText("_", "_");
       }
-      // Ctrl+K - Link
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
         wrapText("[", "](url)");

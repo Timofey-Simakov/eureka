@@ -23,7 +23,6 @@ export default function View() {
     setLoading(true);
     setError(null);
 
-    // Проверяем авторизацию
     const token = localStorage.getItem("token");
     if (!token) {
       setError("Требуется авторизация");

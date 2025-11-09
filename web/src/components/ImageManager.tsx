@@ -58,7 +58,6 @@ export default function ImageManager({ pageId, onInsert }: ImageManagerProps) {
     }
 
     setSelectedFile(file);
-    // Предложить имя файла без расширения
     const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
     setImageName(nameWithoutExt);
   }
@@ -77,11 +76,9 @@ export default function ImageManager({ pageId, onInsert }: ImageManagerProps) {
     setUploading(true);
     try {
       const formData = new FormData();
-      // Сохраняем имя с оригинальным расширением
       const extension = selectedFile.name.split(".").pop();
       const fullName = extension ? `${imageName.trim()}.${extension}` : imageName.trim();
 
-      // Создаём новый файл с пользовательским именем
       const renamedFile = new File([selectedFile], fullName, { type: selectedFile.type });
       formData.append("file", renamedFile);
 

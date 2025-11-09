@@ -22,7 +22,6 @@ func main() {
 	sec := mustEnv("JWT_SECRET")
 	adminPw := mustEnv("ADMIN_PASSWORD")
 
-	// stdlib driver for pgx → *sql.DB implements db.DBTX
 	sqlDB, err := sql.Open("pgx", dsn)
 	if err != nil {
 		log.Fatal(err)
@@ -37,7 +36,6 @@ func main() {
 
 	q := db.New(sqlDB)
 
-	// init admin password each start
 	hash, _ := bcrypt.GenerateFromPassword([]byte(adminPw), bcrypt.DefaultCost)
 	if err := q.AdminSetPassword(context.Background(), string(hash)); err != nil {
 		log.Printf("admin password set: %v", err)

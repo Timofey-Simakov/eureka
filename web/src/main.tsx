@@ -13,7 +13,6 @@ import Editing from "./pages/Editing";
 import Admin from "./pages/Admin";
 import { setToken } from "./lib/api";
 
-// Initialize token from localStorage on app start
 const storedToken = localStorage.getItem("token");
 if (storedToken) {
   setToken(storedToken);

@@ -103,7 +103,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
     const have = new Set(nodeMap.keys());
     const filtered = uniq.filter((e) => have.has(e.source) && have.has(e.target));
 
-    // Count outgoing links for each node
     filtered.forEach((edge) => {
       const sourceNode = nodeMap.get(edge.source);
       if (sourceNode) {
@@ -131,10 +130,8 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
       return;
     }
 
-    // Add arrow marker definitions for different node sizes
     const defs = svg.append("defs");
 
-    // Small nodes (radius 20-25)
     defs.append("marker")
       .attr("id", "arrowhead-small")
       .attr("viewBox", "0 -5 10 10")
@@ -147,7 +144,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", theme.colors.neutral[400]);
 
-    // Medium nodes (radius 25-35)
     defs.append("marker")
       .attr("id", "arrowhead-medium")
       .attr("viewBox", "0 -5 10 10")
@@ -160,7 +156,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", theme.colors.neutral[400]);
 
-    // Large nodes (radius 35+)
     defs.append("marker")
       .attr("id", "arrowhead-large")
       .attr("viewBox", "0 -5 10 10")
@@ -173,7 +168,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", theme.colors.neutral[400]);
 
-    // Add zoom behavior
     const g = svg.append("g");
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
@@ -190,7 +184,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collision", d3.forceCollide().radius(40));
 
-    // Links
     const link = g
       .append("g")
       .selectAll("line")
@@ -208,7 +201,6 @@ function GraphView({ rows }: { rows: GraphRow[] }) {
         return "url(#arrowhead-large)";
       });
 
-    // Nodes
     const nodeGroup = g.append("g").attr("class", "nodes");
     const node = nodeGroup
       .selectAll<SVGGElement, any>("g")
